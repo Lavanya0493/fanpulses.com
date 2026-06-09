@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FanPulses — Live Scores, Analysis & Smart Betting Picks</title>
+  <meta name="description" content="Real-time scores, deep match analysis and expert betting picks across football, cricket, NBA, NFL and more. FanPulses powers smarter fans."/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --black: #080B0F;
+      --dark: #0E1318;
+      --card: #131A22;
+      --border: #1E2A35;
+      --red: #E8192C;
+      --red-dim: #B5142A;
+      --green: #00C853;
+      --amber: #FFB300;
+      --white: #F0F4F8;
+      --muted: #5A6A7A;
+      --soft: #8A9AAA;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--black);
+      color: var(--white);
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+    }
+
+    /* SCANLINE EFFECT */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.03) 2px,
+        rgba(0,0,0,0.03) 4px
+      );
+      pointer-events: none;
+      z-index: 1000;
+    }
+
+    /* NAV */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+      background: rgba(8,11,15,0.95);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 2.5rem; height: 60px;
+    }
+
+    .logo {
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .logo-icon {
+      width: 32px; height: 32px;
+      background: var(--red);
+      clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.8rem;
+      animation: pulse-logo 2s ease infinite;
+    }
+    @keyframes pulse-logo {
+      0%,100% { box-shadow: 0 0 0 0 rgba(232,25,44,0.4); }
+      50% { box-shadow: 0 0 0 8px rgba(232,25,44,0); }
+    }
+    .logo-text {
+      font-family: 'Oswald', sans-serif;
+      font-weight: 700; font-size: 1.4rem;
+      color: var(--white); letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .logo-text span { color: var(--red); }
+
+    .nav-links { display: flex; gap: 2rem; }
+    .nav-links a {
+      color: var(--muted); text-decoration: none;
+      font-size: 0.8rem; font-weight: 600;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--white); }
+
+    .nav-live {
+      display: flex; align-items: center; gap: 0.4rem;
+      background: rgba(232,25,44,0.1);
+      border: 1px solid rgba(232,25,44,0.3);
+      padding: 0.5rem 1.1rem;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.72rem; font-weight: 700;
+      color: var(--red); letter-spacing: 0.1em;
+      text-transform: uppercase; text-decoration: none;
+      transition: all 0.2s;
+    }
+    .nav-live:hover { background: rgba(232,25,44,0.2); }
+    .live-blink {
+      width: 6px; height: 6px; background: var(--red); border-radius: 50%;
+      animation: blink 1s ease infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+    /* HERO */
+    .hero {
+      min-height: 100vh;
+      background: var(--black);
+      position: relative; overflow: hidden;
+      display: flex; flex-direction: column; justify-content: center;
+      padding: 7rem 2.5rem 4rem;
+    }
+
+    /* Stadium lights effect */
+    .hero-light-1 {
+      position: absolute;
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(232,25,44,0.08) 0%, transparent 65%);
+      top: -200px; left: -100px; pointer-events: none;
+      animation: breathe 6s ease infinite;
+    }
+    .hero-light-2 {
+      position: absolute;
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(255,179,0,0.06) 0%, transparent 65%);
+      bottom: -100px; right: -100px; pointer-events: none;
+      animation: breathe 8s ease infinite reverse;
+    }
+    @keyframes breathe { 0%,100%{opacity:0.6} 50%{opacity:1} }
+
+    /* SCOREBOARD TICKER */
+    .score-ticker {
+      position: absolute; top: 60px; left: 0; right: 0;
+      background: var(--red);
+      padding: 0.45rem 0;
+      overflow: hidden; white-space: nowrap;
+      z-index: 10;
+    }
+    .ticker-track {
+      display: inline-block;
+      animation: ticker 40s linear infinite;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.72rem; font-weight: 700;
+      color: white; letter-spacing: 0.05em;
+    }
+    @keyframes ticker { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+    .t-sep { color: rgba(255,255,255,0.4); margin: 0 1.5rem; }
+    .t-score { color: var(--amber); }
+
+    .hero-inner {
+      max-width: 1200px; margin: 0 auto; width: 100%;
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 4rem; align-items: center;
+      position: relative; z-index: 1;
+      margin-top: 2.5rem;
+    }
+
+    .hero-eyebrow {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.68rem; font-weight: 700;
+      color: var(--red); letter-spacing: 0.15em;
+      text-transform: uppercase; margin-bottom: 1.5rem;
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .hero-eyebrow::before {
+      content: ''; width: 20px; height: 1px; background: var(--red);
+    }
+
+    h1 {
+      font-family: 'Oswald', sans-serif;
+      font-weight: 700;
+      font-size: clamp(3rem, 6vw, 6rem);
+      line-height: 0.95;
+      color: var(--white);
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+      margin-bottom: 1.5rem;
+    }
+    h1 .red { color: var(--red); display: block; }
+    h1 .outline {
+      -webkit-text-stroke: 1px rgba(240,244,248,0.3);
+      color: transparent; display: block;
+    }
+
+    .hero-desc {
+      font-size: 1rem; color: var(--soft);
+      line-height: 1.75; max-width: 460px; margin-bottom: 2.5rem;
+    }
+
+    .hero-btns { display: flex; gap: 1rem; flex-wrap: wrap; }
+    .btn-red {
+      background: var(--red); color: white;
+      font-family: 'Oswald', sans-serif;
+      font-weight: 600; font-size: 0.95rem;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      padding: 0.9rem 2rem; border: none; cursor: pointer;
+      text-decoration: none; transition: all 0.2s; display: inline-block;
+    }
+    .btn-red:hover { background: var(--red-dim); transform: translateY(-2px); box-shadow: 0 8px 25px rgba(232,25,44,0.4); }
+    .btn-outline {
+      border: 1px solid var(--border); color: var(--soft);
+      font-family: 'Oswald', sans-serif;
+      font-weight: 600; font-size: 0.9rem;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      padding: 0.9rem 1.75rem; text-decoration: none;
+      transition: all 0.2s; display: inline-block;
+    }
+    .btn-outline:hover { border-color: var(--red); color: var(--white); }
+
+    /* LIVE MATCH CARDS */
+    .match-stack {
+      display: flex; flex-direction: column; gap: 0.75rem;
+    }
+
+    .match-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 1.25rem 1.5rem;
+      position: relative; overflow: hidden;
+      transition: border-color 0.2s;
+    }
+    .match-card:hover { border-color: rgba(232,25,44,0.4); }
+    .match-card::before {
+      content: ''; position: absolute;
+      left: 0; top: 0; bottom: 0; width: 3px;
+      background: var(--red);
+    }
+    .match-card.amber::before { background: var(--amber); }
+    .match-card.green::before { background: var(--green); }
+
+    .match-top {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 0.75rem;
+    }
+    .match-league {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.6rem; font-weight: 700;
+      color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase;
+    }
+    .match-status {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.6rem; font-weight: 700;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      display: flex; align-items: center; gap: 0.3rem;
+    }
+    .status-live { color: var(--red); }
+    .status-ft { color: var(--muted); }
+    .status-soon { color: var(--amber); }
+
+    .match-teams {
+      display: grid; grid-template-columns: 1fr auto 1fr;
+      align-items: center; gap: 1rem;
+    }
+    .team-name {
+      font-family: 'Oswald', sans-serif;
+      font-weight: 600; font-size: 1rem;
+      text-transform: uppercase; letter-spacing: 0.03em;
+    }
+    .team-name.right { text-align: right; }
+    .score-display {
+      font-family: 'Roboto Mono', monospace;
+      font-weight: 700; font-size: 1.6rem;
+      color: var(--amber); letter-spacing: 0.05em;
+      text-align: center; white-space: nowrap;
+    }
+
+    .match-bottom {
+      display: flex; justify-content: space-between;
+      margin-top: 0.75rem; padding-top: 0.75rem;
+      border-top: 1px solid var(--border);
+    }
+    .pick-badge {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.62rem; font-weight: 700;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      padding: 0.2rem 0.6rem;
+      background: rgba(0,200,83,0.1);
+      border: 1px solid rgba(0,200,83,0.25);
+      color: var(--green);
+    }
+    .odds-val {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.7rem; color: var(--amber); font-weight: 700;
+    }
+
+    /* STATS ROW */
+    .stats-row {
+      background: var(--red);
+      padding: 1.5rem 2.5rem;
+    }
+    .stats-inner {
+      max-width: 1100px; margin: 0 auto;
+      display: grid; grid-template-columns: repeat(4,1fr);
+      gap: 2rem;
+    }
+    .stat { text-align: center; }
+    .stat-num {
+      font-family: 'Oswald', sans-serif;
+      font-weight: 700; font-size: 2.5rem;
+      color: white; line-height: 1; letter-spacing: 0.02em;
+    }
+    .stat-label {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.65rem; color: rgba(255,255,255,0.6);
+      margin-top: 0.3rem; letter-spacing: 0.1em; text-transform: uppercase;
+    }
+
+    /* SPORTS COVERED */
+    .sports { padding: 6rem 2.5rem; max-width: 1200px; margin: 0 auto; }
+
+    .section-label {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.68rem; font-weight: 700;
+      color: var(--red); letter-spacing: 0.15em;
+      text-transform: uppercase; margin-bottom: 0.75rem;
+    }
+
+    h2 {
+      font-family: 'Oswald', sans-serif;
+      font-weight: 700; font-size: clamp(2rem, 4vw, 3.5rem);
+      text-transform: uppercase; letter-spacing: 0.03em;
+      color: var(--white); line-height: 1; margin-bottom: 1rem;
+    }
+    h2 .red { color: var(--red); }
+
+    .sports-grid {
+      display: grid; grid-template-columns: repeat(4,1fr);
+      gap: 1px; background: var(--border);
+      margin-top: 3.5rem; border: 1px solid var(--border);
+    }
+    .sport-card {
+      background: var(--card);
+      padding: 2rem 1.75rem;
+      transition: background 0.2s; cursor: default;
+      position: relative; overflow: hidden;
+    }
+    .sport-card:hover { background: #18222E; }
+    .sport-card:hover .sport-emoji { transform: scale(1.2); }
+    .sport-emoji {
+      font-size: 2.5rem; margin-bottom: 1rem; display: block;
+      transition: transform 0.2s;
+    }
+    .sport-name {
+      font-family: 'Oswald', sans-serif;
+      font-weight: 600; font-size: 1rem;
+      text-transform: uppercase; letter-spacing: 0.05em;
+      color: var(--white); margin-bottom: 0.3rem;
+    }
+    .sport-leagues {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.62rem; color: var(--muted);
+      letter-spacing: 0.05em;
+    }
+    .sport-badge {
+      position: absolute; top: 1rem; right: 1rem;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.55rem; font-weight: 700;
+      color: var(--green); letter-spacing: 0.08em;
+      border: 1px solid rgba(0,200,83,0.3);
+      padding: 0.15rem 0.4rem; text-transform: uppercase;
+    }
+
+    /* ANALYSIS */
+    .analysis { background: var(--dark); padding: 6rem 2.5rem; }
+    .analysis-inner { max-width: 1200px; margin: 0 auto; }
+
+    .analysis-grid {
+      display: grid; grid-template-columns: repeat(3,1fr);
+      gap: 1.5rem; margin-top: 3.5rem;
+    }
+    .analysis-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 0; overflow: hidden;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .analysis-card:hover { transform: translateY(-4px); border-color: rgba(232,25,44,0.3); }
+
+    .card-sport-banner {
+      background: var(--red); padding: 0.6rem 1.25rem;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.62rem; font-weight: 700;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      color: white; display: flex; justify-content: space-between;
+    }
+    .card-sport-banner.amber { background: #1A1400; color: var(--amber); border-bottom: 1px solid rgba(255,179,0,0.2); }
+    .card-sport-banner.green-bg { background: #001A0A; color: var(--green); border-bottom: 1px solid rgba(0,200,83,0.2); }
+
+    .card-content { padding: 1.5rem; }
+    .card-match {
+      font-family: 'Oswald', sans-serif;
+      font-weight: 600; font-size: 1.05rem;
+      text-transform: uppercase; margin-bottom: 0.5rem;
+    }
+    .card-desc { font-size: 0.83rem; color: var(--soft); line-height: 1.65; margin-bottom: 1.25rem; }
+
+    .card-pick {
+      display: flex; justify-content: space-between; align-items: center;
+      background: rgba(0,200,83,0.05);
+      border: 1px solid rgba(0,200,83,0.15);
+      padding: 0.75rem 1rem;
+      margin-bottom: 1rem;
+    }
+    .pick-label { font-family: 'Roboto Mono', monospace; font-size: 0.62rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+    .pick-val { font-family: 'Oswald', sans-serif; font-weight: 600; font-size: 1rem; color: var(--green); }
+    .pick-odds { font-family: 'Roboto Mono', monospace; font-size: 0.75rem; color: var(--amber); font-weight: 700; }
+
+    .card-btn {
+      display: block; width: 100%;
+      background: var(--red); color: white;
+      font-family: 'Oswald', sans-serif;
+      font-weight: 600; font-size: 0.85rem;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      padding: 0.8rem; text-align: center;
+      text-decoration: none; transition: background 0.2s;
+      border: none; cursor: pointer;
+    }
+    .card-btn:hover { background: var(--red-dim); }
+
+    /* HOW IT WORKS */
+    .how { padding: 6rem 2.5rem; max-width: 1200px; margin: 0 auto; }
+
+    .how-grid {
+      display: grid; grid-template-columns: repeat(4,1fr);
+      gap: 1.5rem; margin-top: 3.5rem;
+    }
+    .how-card {
+      padding: 2rem 1.5rem;
+      border-top: 3px solid var(--border);
+      transition: border-color 0.2s;
+    }
+    .how-card:hover { border-color: var(--red); }
+    .how-num {
+      font-family: 'Oswald', sans-serif;
+      font-weight: 700; font-size: 3.5rem;
+      color: rgba(232,25,44,0.15); line-height: 1; margin-bottom: 1rem;
+    }
+    .how-card h3 {
+      font-family: 'Oswald', sans-serif;
+      font-weight: 600; font-size: 1rem;
+      text-transform: uppercase; letter-spacing: 0.05em;
+      margin-bottom: 0.6rem;
+    }
+    .how-card p { font-size: 0.83rem; color: var(--soft); line-height: 1.7; }
+
+    /* TESTIMONIALS */
+    .testi { background: var(--dark); padding: 6rem 2.5rem; border-top: 1px solid var(--border); }
+    .testi-inner { max-width: 1200px; margin: 0 auto; }
+    .testi-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.5rem; margin-top: 3.5rem; }
+    .testi-card {
+      background: var(--card); border: 1px solid var(--border);
+      padding: 2rem; transition: border-color 0.2s;
+    }
+    .testi-card:hover { border-color: rgba(232,25,44,0.3); }
+    .testi-stars { color: var(--amber); font-size: 0.8rem; margin-bottom: 1rem; letter-spacing: 0.1em; }
+    .testi-text { font-size: 0.9rem; color: var(--soft); line-height: 1.75; margin-bottom: 1.5rem; font-style: italic; }
+    .testi-author { display: flex; align-items: center; gap: 0.75rem; }
+    .t-avatar {
+      width: 38px; height: 38px; background: var(--red);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 0.85rem; color: white;
+    }
+    .t-name { font-family: 'Oswald', sans-serif; font-weight: 600; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .t-loc { font-family: 'Roboto Mono', monospace; font-size: 0.62rem; color: var(--muted); }
+
+    /* CTA */
+    .cta {
+      background: var(--red); padding: 7rem 2.5rem;
+      text-align: center; position: relative; overflow: hidden;
+    }
+    .cta::before {
+      content: '⚽ 🏀 🏈 🎾 🏏 🏆 ⚽ 🏀 🏈 🎾 🏏 🏆';
+      position: absolute; font-size: 8rem;
+      opacity: 0.05; top: 50%; left: 50%;
+      transform: translate(-50%,-50%);
+      white-space: nowrap; pointer-events: none;
+    }
+    .cta h2 { color: white; font-size: clamp(2.5rem, 5vw, 5rem); margin-bottom: 1rem; }
+    .cta p { color: rgba(255,255,255,0.7); font-size: 1rem; max-width: 500px; margin: 0 auto 3rem; line-height: 1.75; }
+    .cta-form { display: flex; gap: 0; max-width: 460px; margin: 0 auto; }
+    .cta-form input {
+      flex: 1; background: rgba(0,0,0,0.25);
+      border: 1px solid rgba(255,255,255,0.2); border-right: none;
+      color: white; font-family: 'Inter', sans-serif;
+      font-size: 0.9rem; padding: 1rem 1.25rem; outline: none;
+      transition: border-color 0.2s;
+    }
+    .cta-form input:focus { border-color: white; }
+    .cta-form input::placeholder { color: rgba(255,255,255,0.35); }
+    .btn-white {
+      background: white; color: var(--red);
+      font-family: 'Oswald', sans-serif;
+      font-weight: 700; font-size: 0.9rem;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      padding: 1rem 1.75rem; border: none; cursor: pointer;
+      text-decoration: none; white-space: nowrap;
+      transition: background 0.2s; display: inline-block;
+    }
+    .btn-white:hover { background: #E8F0F8; }
+
+    /* FOOTER */
+    footer {
+      background: #030507;
+      border-top: 2px solid var(--red);
+      padding: 2rem 2.5rem;
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 1.5rem;
+    }
+    .footer-note {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.6rem; color: var(--border);
+      letter-spacing: 0.05em; text-transform: uppercase;
+    }
+    .footer-links { display: flex; gap: 1.5rem; }
+    .footer-links a {
+      font-size: 0.72rem; color: var(--muted);
+      text-decoration: none; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.05em;
+      transition: color 0.2s;
+    }
+    .footer-links a:hover { color: var(--red); }
+    .footer-disclaimer {
+      width: 100%;
+      font-size: 0.62rem; color: var(--border);
+      font-family: 'Roboto Mono', monospace;
+      letter-spacing: 0.03em; line-height: 1.6;
+      border-top: 1px solid var(--border); padding-top: 1rem; margin-top: 0.5rem;
+    }
+
+    /* REVEAL */
+    .reveal { opacity:0; transform:translateY(20px); transition:opacity 0.55s ease,transform 0.55s ease; }
+    .reveal.visible { opacity:1; transform:translateY(0); }
+
+    @media(max-width:900px){
+      .hero-inner{grid-template-columns:1fr;}
+      .match-stack{display:none;}
+      .stats-inner{grid-template-columns:repeat(2,1fr);}
+      .sports-grid{grid-template-columns:repeat(2,1fr);}
+      .analysis-grid{grid-template-columns:1fr;}
+      .how-grid{grid-template-columns:repeat(2,1fr);}
+      .testi-grid{grid-template-columns:1fr;}
+      .cta-form{flex-direction:column;}
+      .cta-form input{border-right:1px solid rgba(255,255,255,0.2);}
+      nav{padding:0 1.25rem;}
+      .nav-links{display:none;}
+      footer{flex-direction:column;text-align:center;}
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">
+    <div class="logo-icon">⚡</div>
+    <div class="logo-text">Fan<span>Pulses</span></div>
+  </div>
+  <div class="nav-links">
+    <a href="#sports">Sports</a>
+    <a href="#analysis">Analysis</a>
+    <a href="#picks">Picks</a>
+    <a href="#how">How it works</a>
+  </div>
+  <a href="#picks" class="nav-live"><span class="live-blink"></span> Live Now</a>
+</nav>
+
+<!-- SCORE TICKER -->
+<div class="score-ticker">
+  <div class="ticker-track">
+    MAN UTD <span class="t-score">2 — 1</span> ARSENAL · 74' <span class="t-sep">|</span>
+    LAKERS <span class="t-score">108 — 99</span> CELTICS · Q4 <span class="t-sep">|</span>
+    IND <span class="t-score">287/6</span> AUS · 45 OVS <span class="t-sep">|</span>
+    REAL MADRID <span class="t-score">3 — 0</span> BARCELONA · FT <span class="t-sep">|</span>
+    CHIEFS <span class="t-score">24 — 17</span> BILLS · 3RD QTR <span class="t-sep">|</span>
+    DJOKOVIC <span class="t-score">6-4 3-6 5-4</span> ALCARAZ · LIVE <span class="t-sep">|</span>
+    MAN UTD <span class="t-score">2 — 1</span> ARSENAL · 74' <span class="t-sep">|</span>
+    LAKERS <span class="t-score">108 — 99</span> CELTICS · Q4 <span class="t-sep">|</span>
+    IND <span class="t-score">287/6</span> AUS · 45 OVS <span class="t-sep">|</span>
+    REAL MADRID <span class="t-score">3 — 0</span> BARCELONA · FT <span class="t-sep">|</span>
+    CHIEFS <span class="t-score">24 — 17</span> BILLS · 3RD QTR <span class="t-sep">|</span>
+    DJOKOVIC <span class="t-score">6-4 3-6 5-4</span> ALCARAZ · LIVE <span class="t-sep">|</span>
+  </div>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-light-1"></div>
+  <div class="hero-light-2"></div>
+
+  <div class="hero-inner">
+    <div>
+      <div class="hero-eyebrow">Live · Global · Accurate</div>
+      <h1>
+        Your Edge
+        <span class="red">In Every</span>
+        <span class="outline">Match.</span>
+      </h1>
+      <p class="hero-desc">Real-time scores, deep match analysis, and data-driven betting picks across football, cricket, basketball, NFL, tennis and more. Built for fans who play to win.</p>
+      <div class="hero-btns">
+        <a href="#picks" class="btn-red">Get Today's Picks →</a>
+        <a href="#sports" class="btn-outline">All Sports</a>
+      </div>
+    </div>
+
+    <div class="match-stack">
+      <div class="match-card">
+        <div class="match-top">
+          <div class="match-league">Premier League · GW38</div>
+          <div class="match-status status-live"><span class="live-blink"></span> 74'</div>
+        </div>
+        <div class="match-teams">
+          <div class="team-name">Man Utd</div>
+          <div class="score-display">2 — 1</div>
+          <div class="team-name right">Arsenal</div>
+        </div>
+        <div class="match-bottom">
+          <div class="pick-badge">✓ Our Pick: Man Utd Win</div>
+          <div class="odds-val">Odds: 2.40</div>
+        </div>
+      </div>
+
+      <div class="match-card amber">
+        <div class="match-top">
+          <div class="match-league">NBA Playoffs · Game 5</div>
+          <div class="match-status status-live"><span class="live-blink"></span> Q4 3:21</div>
+        </div>
+        <div class="match-teams">
+          <div class="team-name">Lakers</div>
+          <div class="score-display">108—99</div>
+          <div class="team-name right">Celtics</div>
+        </div>
+        <div class="match-bottom">
+          <div class="pick-badge">✓ Our Pick: Lakers +5.5</div>
+          <div class="odds-val">Odds: 1.90</div>
+        </div>
+      </div>
+
+      <div class="match-card green">
+        <div class="match-top">
+          <div class="match-league">ICC Test · Day 2</div>
+          <div class="match-status status-live"><span class="live-blink"></span> Live</div>
+        </div>
+        <div class="match-teams">
+          <div class="team-name">India</div>
+          <div class="score-display">287/6</div>
+          <div class="team-name right">Australia</div>
+        </div>
+        <div class="match-bottom">
+          <div class="pick-badge">✓ Our Pick: India 350+</div>
+          <div class="odds-val">Odds: 1.75</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<div class="stats-row">
+  <div class="stats-inner">
+    <div class="stat reveal"><div class="stat-num">50+</div><div class="stat-label">Sports covered</div></div>
+    <div class="stat reveal"><div class="stat-num">24/7</div><div class="stat-label">Live scores</div></div>
+    <div class="stat reveal"><div class="stat-num">73%</div><div class="stat-label">Pick win rate</div></div>
+    <div class="stat reveal"><div class="stat-num">2M+</div><div class="stat-label">Monthly fans</div></div>
+  </div>
+</div>
+
+<!-- SPORTS -->
+<div class="sports" id="sports">
+  <div class="section-label">Coverage</div>
+  <h2>Every Sport.<br><span class="red">Every League.</span></h2>
+  <div class="sports-grid">
+    <div class="sport-card reveal"><span class="sport-emoji">⚽</span><div class="sport-name">Football</div><div class="sport-leagues">EPL · La Liga · UCL · Bundesliga · Serie A</div><div class="sport-badge">Live</div></div>
+    <div class="sport-card reveal"><span class="sport-emoji">🏏</span><div class="sport-name">Cricket</div><div class="sport-leagues">ICC Tests · IPL · BBL · ODI World Cup</div><div class="sport-badge">Live</div></div>
+    <div class="sport-card reveal"><span class="sport-emoji">🏀</span><div class="sport-name">Basketball</div><div class="sport-leagues">NBA · WNBA · EuroLeague · NBL</div><div class="sport-badge">Live</div></div>
+    <div class="sport-card reveal"><span class="sport-emoji">🏈</span><div class="sport-name">American Football</div><div class="sport-leagues">NFL · NCAA · Super Bowl</div><div class="sport-badge">Live</div></div>
+    <div class="sport-card reveal"><span class="sport-emoji">🎾</span><div class="sport-name">Tennis</div><div class="sport-leagues">Grand Slams · ATP · WTA · Davis Cup</div><div class="sport-badge">Live</div></div>
+    <div class="sport-card reveal"><span class="sport-emoji">🏉</span><div class="sport-name">Rugby</div><div class="sport-leagues">NRL · AFL · Super Rugby · Six Nations</div><div class="sport-badge">Live</div></div>
+    <div class="sport-card reveal"><span class="sport-emoji">🏒</span><div class="sport-name">Ice Hockey</div><div class="sport-leagues">NHL · IIHF · KHL</div><div class="sport-badge">Live</div></div>
+    <div class="sport-card reveal"><span class="sport-emoji">🏎️</span><div class="sport-name">Formula 1</div><div class="sport-leagues">All Grand Prix · Qualifying · Standings</div><div class="sport-badge">Live</div></div>
+  </div>
+</div>
+
+<!-- ANALYSIS & PICKS -->
+<div class="analysis" id="analysis">
+  <div class="analysis-inner">
+    <div class="section-label">Today's Picks</div>
+    <h2>Data-Driven.<br><span class="red">Expert Backed.</span></h2>
+    <div class="analysis-grid" id="picks">
+      <div class="analysis-card reveal">
+        <div class="card-sport-banner"><span>⚽ Premier League</span><span>TODAY · 20:00 GMT</span></div>
+        <div class="card-content">
+          <div class="card-match">Liverpool vs Chelsea</div>
+          <div class="card-desc">Liverpool's home form has been dominant — 8 wins from last 10 at Anfield. Chelsea missing key midfield enforcer. Expect high-tempo game with Liverpool to edge it.</div>
+          <div class="card-pick">
+            <div><div class="pick-label">Our Pick</div><div class="pick-val">Liverpool Win</div></div>
+            <div class="pick-odds">@ 1.85</div>
+          </div>
+          <a href="YOUR_BETTING_AFFILIATE_LINK" target="_blank" class="card-btn">Bet Now →</a>
+        </div>
+      </div>
+      <div class="analysis-card reveal">
+        <div class="card-sport-banner amber"><span>🏏 IPL 2025</span><span>TODAY · 14:00 IST</span></div>
+        <div class="card-content">
+          <div class="card-match">MI vs CSK</div>
+          <div class="card-desc">Mumbai Indians batting depth gives them the edge on this Wankhede pitch. CSK's bowling attack has leaked runs in last 3 outings. MI total over 185 looks strong value.</div>
+          <div class="card-pick">
+            <div><div class="pick-label">Our Pick</div><div class="pick-val">MI Total 185+</div></div>
+            <div class="pick-odds">@ 2.10</div>
+          </div>
+          <a href="YOUR_BETTING_AFFILIATE_LINK" target="_blank" class="card-btn">Bet Now →</a>
+        </div>
+      </div>
+      <div class="analysis-card reveal">
+        <div class="card-sport-banner green-bg"><span>🏀 NBA Playoffs</span><span>TODAY · 19:30 ET</span></div>
+        <div class="card-content">
+          <div class="card-match">Nuggets vs Thunder</div>
+          <div class="card-desc">Denver's altitude advantage is real. Jokić posting 32+ in last 4 playoff games. Oklahoma young roster showing fatigue. Nuggets to cover the spread comfortably.</div>
+          <div class="card-pick">
+            <div><div class="pick-label">Our Pick</div><div class="pick-val">Nuggets -4.5</div></div>
+            <div class="pick-odds">@ 1.95</div>
+          </div>
+          <a href="YOUR_BETTING_AFFILIATE_LINK" target="_blank" class="card-btn">Bet Now →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HOW IT WORKS -->
+<div class="how" id="how">
+  <div class="section-label">How It Works</div>
+  <h2>Simple.<br><span class="red">Powerful.</span></h2>
+  <div class="how-grid">
+    <div class="how-card reveal">
+      <div class="how-num">01</div>
+      <h3>Pick Your Sport</h3>
+      <p>Choose from 50+ sports and hundreds of leagues. Follow the ones you care about and we filter everything else out.</p>
+    </div>
+    <div class="how-card reveal">
+      <div class="how-num">02</div>
+      <h3>Get Live Scores</h3>
+      <p>Real-time updates every 30 seconds. Match stats, player performance, momentum indicators — all in one feed.</p>
+    </div>
+    <div class="how-card reveal">
+      <div class="how-num">03</div>
+      <h3>Read the Analysis</h3>
+      <p>Our analysts break down every key match — form, injuries, head-to-head history, and conditions — before kickoff.</p>
+    </div>
+    <div class="how-card reveal">
+      <div class="how-num">04</div>
+      <h3>Place Smarter Bets</h3>
+      <p>Use our picks and odds comparisons to find value. Click through to our partner bookmakers and place with confidence.</p>
+    </div>
+  </div>
+</div>
+
+<!-- TESTIMONIALS -->
+<div class="testi">
+  <div class="testi-inner">
+    <div class="section-label">Fan Reviews</div>
+    <h2>Fans Who<br><span class="red">Win More.</span></h2>
+    <div class="testi-grid">
+      <div class="testi-card reveal">
+        <div class="testi-stars">★★★★★</div>
+        <div class="testi-text">"FanPulses called the Liverpool vs PSG result when everyone had PSG winning. The analysis was spot on and I backed it. Best betting resource I've found."</div>
+        <div class="testi-author">
+          <div class="t-avatar">JK</div>
+          <div><div class="t-name">James K.</div><div class="t-loc">London, UK · Football</div></div>
+        </div>
+      </div>
+      <div class="testi-card reveal">
+        <div class="testi-stars">★★★★★</div>
+        <div class="testi-text">"The cricket analysis during IPL season is unreal. They catch things most commentators miss — pitch conditions, dew factor, matchup stats. My ROI is up 40%."</div>
+        <div class="testi-author">
+          <div class="t-avatar">RV</div>
+          <div><div class="t-name">Ravi V.</div><div class="t-loc">Mumbai, India · Cricket</div></div>
+        </div>
+      </div>
+      <div class="testi-card reveal">
+        <div class="testi-stars">★★★★★</div>
+        <div class="testi-text">"Live score updates are faster than the official apps. The NBA picks during playoffs were 8/10 correct. I've tried 6 tipster sites — FanPulses is the only one I kept."</div>
+        <div class="testi-author">
+          <div class="t-avatar">TM</div>
+          <div><div class="t-name">Tyler M.</div><div class="t-loc">Chicago, USA · NBA</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CTA -->
+<div class="cta">
+  <div class="section-label" style="color:rgba(255,255,255,0.6)">Free Access</div>
+  <h2>GET YOUR<br>EDGE TODAY.</h2>
+  <p>Join 2 million fans getting live scores and expert picks daily. Free forever — no credit card needed.</p>
+  <div class="cta-form">
+    <input type="email" placeholder="Enter your email" />
+    <a href="YOUR_BETTING_AFFILIATE_LINK" target="_blank" class="btn-white">Join Free →</a>
+  </div>
+</div>
+
+<footer>
+  <div class="logo" style="opacity:0.5;">
+    <div class="logo-text" style="font-size:1.1rem;">Fan<span>Pulses</span></div>
+  </div>
+  <div class="footer-note">© 2025 FanPulses.com · Global Sports Analytics</div>
+  <div class="footer-links">
+    <a href="#">Privacy</a>
+    <a href="#">Terms</a>
+    <a href="#">Responsible Gambling</a>
+    <a href="#">Contact</a>
+  </div>
+  <div class="footer-disclaimer">
+    ⚠️ Gambling disclaimer: FanPulses provides analysis and information for entertainment purposes only. Betting involves risk. Please gamble responsibly. If you have a gambling problem, call the National Gambling Helpline. Must be 18+ to bet. Terms and conditions apply.
+  </div>
+</footer>
+
+<script>
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
